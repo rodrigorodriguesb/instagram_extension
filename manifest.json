@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "Captura de Dados Instagram",
+    "version": "1.0",
+    "description": "Uma extensão para capturar dados do Instagram ao clicar no ícone da extensão.",
+    "permissions": [
+      "activeTab",
+      "scripting"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "action": {
+      "default_icon": "icon.png"
+    },
+    "icons": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    },
+    "host_permissions": [
+      "http://*/*",
+      "https://*/*"
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": ["style.css", "icon.png, content.js"],
+        "matches": ["<all_urls>"]
+      }
+    ]
+  }
+  
