@@ -7,18 +7,17 @@
 
 - **`content.js`**: Este script é executado na página do Instagram, coletando dados e interagindo com o conteúdo da página. Ele implementa a lógica principal da extensão para capturar informações relevantes.
 
-- **`style.css`**: Este arquivo contém as definições de estilo que determinam a aparência da interface da extensão, incluindo modais e botões, assegurando que a visualização seja atraente e funcional.
+- **`style.css`**: Este arquivo contém as definições de estilo que determinam a aparência da interface da extensão
 
-# Documentação do Manifesto: `manifest.json`
+# : `manifest.json`
 
 ## Descrição Geral
-Este arquivo define a extensão "Captura de Dados Instagram", especificando suas configurações e permissões.
 
 ## Principais Campos
 
 ### 1. `manifest_version`
 - **Valor**: `3`
-- **Descrição**: Versão do manifesto, a mais recente, garantindo melhorias em segurança e desempenho.
+- **Descrição**: Versão do manifesto
 
 ### 2. `name`
 - **Valor**: `"Captura de Dados Instagram"`
@@ -29,7 +28,7 @@ Este arquivo define a extensão "Captura de Dados Instagram", especificando suas
 - **Descrição**: Versão atual da extensão.
 
 ### 4. `description`
-- **Valor**: `"Uma extensão para capturar dados do Instagram ao clicar no ícone da extensão."`
+- **Valor**: `"Uma extensão para capturar dados"`
 - **Descrição**: Breve descrição das funcionalidades.
 
 ### 5. `permissions`
@@ -53,7 +52,7 @@ Este arquivo define a extensão "Captura de Dados Instagram", especificando suas
 
 
 
-# Documentação: `backgroud.js`
+# `backgroud.js`
 
 ## Descrição da Função
 Este código adiciona um ouvinte para o clique no ícone da extensão do Chrome. Quando o ícone é clicado, ele executa o script `content.js` na aba atual.
