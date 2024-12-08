@@ -1,19 +1,24 @@
-// content.js
-
 (async function () {
-    const data = extractInstagramData();
-    
-    if (Object.keys(data).length > 0) {
-        displayModal(data);
-    } else {
-        displayModal({ error: "Nenhum dado encontrado." });
+    try {
+        const data = await extractInstagramData();
+
+        if (Object.keys(data).length > 0) {
+            displayModal(data);
+        } else {
+            displayModal({ error: "Nenhum dado encontrado." });
+        }
+    } catch (error) {
+        console.error("Erro ao extrair dados:", error);
+        displayModal({ error: "Erro ao extrair dados do Instagram." });
     }
 })();
 
-// Função para extrair os dados do Instagram
-function extractInstagramData() {
+// Função para extrair os dados do Instagram e URLs
+async function extractInstagramData() {
     const data = {
         url: window.location.href, // URL atual
+        allUrls: await extractAllUrls(), // Captura todas as URLs da página
+        imageUrls: await extractImageUrls(), // Captura as URLs das imagens
     };
 
     const keywords = [
@@ -23,13 +28,23 @@ function extractInstagramData() {
         "Perfil", "Atividade do perfil", "Visitas ao perfil", "Seguidores",
     ];
 
+    // Busca por palavras-chave e associa números encontrados
     keywords.forEach((keyword) => {
         const result = findNumberNearText(keyword);
         if (result) data[keyword] = result;
     });
 
-    const copypaste = `
-        Reach Accounts reached ${data["Contas com engajamento"] || 0} 
+    // Geração de dados para envio
+    data.copypaste = generateCopypaste(data);
+
+    return data;
+}
+
+// Função para gerar o conteúdo do copypaste
+function generateCopypaste(data) {
+    return `URLs capturadas:\n${data.allUrls.join('\n')}\n` +
+        `Imagens capturadas:\n${data.imageUrls.join('\n')}\n` +
+        `Reach Accounts reached ${data["Contas com engajamento"] || 0} 
         Followers ${data["Seguidores"] || 0}% 
         Non-followers ${(100 - (data["Seguidores"] || 0))}% 
         Impressions ${data["Impressões"] || 0} 
@@ -45,12 +60,24 @@ function extractInstagramData() {
         Profile ${data["Perfil"] || 0} 
         Profile activity ${data["Atividade do perfil"] || 0} 
         Profile visits ${data["Visitas ao perfil"] || 0} 
-        Follows ${data["Follows"] || 0}
-    `;
-    data.copypaste = copypaste;
-
-    return data;
+        Follows ${data["Follows"] || 0}`;
 }
+
+// Função para capturar todas as URLs da página, sem duplicatas
+async function extractAllUrls() {
+    const urls = Array.from(document.querySelectorAll('a')).map(link => link.href);
+    return [...new Set(urls)]; // Remover URLs duplicadas
+}
+
+// Função para capturar as URLs das imagens
+async function extractImageUrls() {
+    const images = Array.from(document.querySelectorAll('img'))
+        .map(img => img.src)
+        .filter(src => !src.startsWith('data:image')); // Filtrar URLs que começam com "data:image"
+    
+    return [...new Set(images)]; 
+}
+
 
 // Função para encontrar números próximos a texto
 function findNumberNearText(searchText) {
@@ -72,10 +99,18 @@ function findNumberNearText(searchText) {
 function displayModal(data) {
     const modal = document.createElement("div");
     modal.id = "instagram-data-modal";
-    modal.innerHTML = `
+    modal.innerHTML = `        
         <div class="modal-content">
             <h2>Dados Capturados</h2>
-            <p>${data.error || Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('<br>')}</p>
+            <p>${data.error || Object.entries(data).map(([key, value]) => {
+                // Exclui a chave 'copypaste' do conteúdo a ser exibido
+                if (key === 'copypaste') return ''; // Ignora a chave copypaste
+
+                if (Array.isArray(value)) {
+                    return `<strong>${key}:</strong><br>${value.join('<br>')}`;
+                }
+                return `<strong>${key}:</strong> ${value}`;
+            }).join('<br>')}</p>
             <div class="modal-buttons">
                 <button id="close-modal">Fechar</button>
                 <button id="send-data">Enviar Dados</button>
@@ -86,7 +121,7 @@ function displayModal(data) {
 
     document.getElementById("close-modal").addEventListener("click", () => modal.remove());
     document.getElementById("send-data").addEventListener("click", () => sendDataToAPI(data, modal));
-    addModalStyles(); 
+    addModalStyles();
 }
 
 // Função para enviar dados para a API
@@ -106,7 +141,7 @@ async function sendDataToAPI(data, modal) {
             body: JSON.stringify({
                 copypaste: data.copypaste,
                 URLInsights: data.url,
-                URLFile: "//f03573995e501f9eb1704b12a86cf8b7.cdn.bubble.io/f1733204214323x778132880420399400/CleanShot%202024-12-03%20at%2002.35.59.png", 
+                URLFile: data.imageUrls, 
                 date: new Date().toLocaleDateString("pt-BR"),
             }),
             signal: controller.signal,
