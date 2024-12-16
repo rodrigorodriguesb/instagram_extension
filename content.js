@@ -13,6 +13,30 @@
     }
 })();
 
+// Função para capturar a imagem do vídeo e adicioná-la ao modal
+function captureVideoScreenshot(videoElement) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL('image/png'); // Retorna a imagem como base64
+}
+
+// Função para capturar diretamente uma imagem (estática)
+function captureImageScreenshot(imageElement) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    canvas.width = imageElement.naturalWidth;
+    canvas.height = imageElement.naturalHeight;
+    context.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL('image/png'); // Retorna a imagem como base64
+}
+
 // Função para extrair os dados do Instagram e URLs
 async function extractInstagramData() {
     const data = {
@@ -75,9 +99,8 @@ async function extractImageUrls() {
         .map(img => img.src)
         .filter(src => !src.startsWith('data:image')); // Filtrar URLs que começam com "data:image"
     
-    return [...new Set(images)]; 
+    return [...new Set(images)];
 }
-
 
 // Função para encontrar números próximos a texto
 function findNumberNearText(searchText) {
@@ -103,7 +126,6 @@ function displayModal(data) {
         <div class="modal-content">
             <h2>Dados Capturados</h2>
             <p>${data.error || Object.entries(data).map(([key, value]) => {
-                // Exclui a chave 'copypaste' do conteúdo a ser exibido
                 if (key === 'copypaste') return ''; // Ignora a chave copypaste
 
                 if (Array.isArray(value)) {
@@ -111,28 +133,57 @@ function displayModal(data) {
                 }
                 return `<strong>${key}:</strong> ${value}`;
             }).join('<br>')}</p>
+            <div class="media-screenshot">
+                <button id="capture-media-screenshot">Capturar Imagem de Mídia</button>
+            <div id="media-screenshot"></div>
+            </div>
             <div class="modal-buttons">
                 <button id="close-modal">Fechar</button>
                 <button id="send-data">Enviar Dados</button>
             </div>
+        
         </div>
     `;
     document.body.appendChild(modal);
 
     document.getElementById("close-modal").addEventListener("click", () => modal.remove());
     document.getElementById("send-data").addEventListener("click", () => sendDataToAPI(data, modal));
+
+    // Captura de vídeo ou imagem
+    const captureButton = document.getElementById('capture-media-screenshot');
+    captureButton.addEventListener('click', () => {
+        const videoElement = document.querySelector('video');
+        const imageElement = document.querySelector('img[src][srcset]');
+
+        if (videoElement && !videoElement.paused) {
+            const screenshotData = captureVideoScreenshot(videoElement);
+            const screenshotElement = document.getElementById('media-screenshot');
+            screenshotElement.innerHTML = `<img src="${screenshotData}" alt="Screenshot do Vídeo" style="max-width: 20%; height: auto;">`;
+        } else if (imageElement && imageElement.getAttribute('crossorigin') === 'anonymous') {
+            const screenshotData = captureImageScreenshot(imageElement);
+            const screenshotElement = document.getElementById('media-screenshot');
+            screenshotElement.innerHTML = `<img src="${screenshotData}" alt="Screenshot da Imagem" style="max-width: 20%; height: auto;">`;
+        } else {
+            alert('Nenhuma mídia encontrada na página ou a mídia não possui o atributo "crossorigin=anonymous".');
+        }        
+    });
+
     addModalStyles();
 }
 
 // Função para enviar dados para a API
 async function sendDataToAPI(data, modal) {
-    const apiUrl = "https://gateway.talita.ai/webhook/7c4785f9-d1a0-4a6f-9409-419d27b74fa0";
+    const apiUrl = "https://rodrigowebteste.app.n8n.cloud/webhook-test/a261af5c-d76f-4ede-98f9-ff1584b8fc42";
     const loadingMessage = document.createElement("div");
     loadingMessage.textContent = "Enviando dados, por favor, aguarde...";
     document.body.appendChild(loadingMessage);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
+
+    // Captura a imagem do modal
+    const screenshotElement = document.getElementById('media-screenshot').querySelector('img');
+    const imageBase64 = screenshotElement ? screenshotElement.src : null;
 
     try {
         const response = await fetch(apiUrl, {
@@ -141,7 +192,7 @@ async function sendDataToAPI(data, modal) {
             body: JSON.stringify({
                 copypaste: data.copypaste,
                 URLInsights: data.url,
-                URLFile: data.imageUrls, 
+                imageScreenshot: imageBase64, // Enviar a imagem capturada
                 date: new Date().toLocaleDateString("pt-BR"),
             }),
             signal: controller.signal,
